@@ -97,6 +97,7 @@ module.exports = function (grunt) {
                 src: [
                     'typings/**/*.d.ts',
                     './src/_Version.ts',
+                    './src/_Library.ts',
                     './src/*.ts',
                     './src/**/*.ts'
                 ].concat(unify.typings({includeSelf: false})),

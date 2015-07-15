@@ -24,7 +24,7 @@
     "type": "export",
     "exports": "blueprint.core"
   },
-  "themes": "none",
+  "themes": {},
   "typings": [
     "dist/blueprint-core.d.ts"
   ]
