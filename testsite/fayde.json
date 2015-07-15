@@ -1,0 +1,14 @@
+{
+  "libs": {
+    "blueprint-core": {
+      "exports": "blueprint.core"
+    }
+  },
+  "themes": {
+    "blueprint-core": "none"
+  },
+  "debug": {
+    "warnMissingThemes": false,
+    "warnBrokenPath": false
+  }
+}

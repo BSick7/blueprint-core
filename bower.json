@@ -1,0 +1,17 @@
+{
+  "name": "blueprint-core",
+  "version": "0.1.0",
+  "ignore": [
+    "build",
+    "test",
+    "testsite",
+    "typings",
+    "Gruntfile.js"
+  ],
+  "dependencies": {
+    "fayde": "~0.16.45"
+  },
+  "devDependencies": {
+    "qunit": "~1.18.0"
+  }
+}
