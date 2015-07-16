@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.wsick.com/fayde/x"
         xmlns:blueprint="http://schemas.wsick.com/blueprint">
     <Style TargetType="blueprint:Container">
-        <Setter Property="ItemsPanelTemplate">
+        <Setter Property="Template">
             <Setter.Value>
-                <Canvas />
+                <Canvas x:Name="canvas">
+                </Canvas>
             </Setter.Value>
         </Setter>
     </Style>
@@ -17,5 +18,7 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+    <Style TargetType="blueprint:Link">
     </Style>
 </ResourceDictionary>

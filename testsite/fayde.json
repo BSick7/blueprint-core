@@ -1,11 +1,19 @@
 {
   "libs": {
     "blueprint-core": {
-      "exports": "blueprint.core"
+      "exports": "blueprint.core",
+      "deps": [
+        "exjs"
+      ]
+    },
+    "exjs": {
+      "exports": "exjs",
+      "path": "lib/exjs/dist/ex.min"
     }
   },
   "themes": {
-    "blueprint-core": "none"
+    "blueprint-core": {},
+    "exjs": "none"
   },
   "debug": {
     "warnMissingThemes": false,
