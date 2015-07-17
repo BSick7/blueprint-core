@@ -1,12 +1,15 @@
 <Application
         xmlns="http://schemas.wsick.com/fayde"
         xmlns:x="http://schemas.wsick.com/fayde/x"
-        xmlns:blueprint="http://schemas.wsick.com/blueprint"
+        xmlns:blueprint="lib://blueprint-core/controls"
+        xmlns:vms="ViewModels"
         ThemeName="Metro">
     <Application.Resources>
     </Application.Resources>
     <Grid x:Name="LayoutRoot">
-        <blueprint:Surface>
-        </blueprint:Surface>
+        <Grid.DataContext>
+            <vms:MainViewModel></vms:MainViewModel>
+        </Grid.DataContext>
+        <blueprint:Container Source="{Binding RootContainer}" />
     </Grid>
 </Application>

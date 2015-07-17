@@ -1,3 +1,5 @@
+/// <reference path="Resource.ts" />
+
 module blueprint.core.controls {
     import Canvas = Fayde.Controls.Canvas;
     import Binding = Fayde.Data.Binding;

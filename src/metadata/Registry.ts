@@ -1,6 +1,4 @@
 module blueprint.core.metadata {
-    export var registry = new Registry();
-
     export class Registry {
         private types: exjs.Map<any, IMetadataType>;
 
@@ -19,4 +17,5 @@ module blueprint.core.metadata {
             return this.types.get(uid);
         }
     }
+    export var registry = new Registry();
 }

@@ -19,8 +19,34 @@ declare module blueprint.core {
     interface IResource {
         id: any;
         metadataUid: string;
-        owner: IContainer;
-        links: exjs.IEnumerableEx<ILink>;
+        owner?: IContainer;
+        links?: exjs.IEnumerableEx<ILink>;
+    }
+}
+declare module blueprint.core.controls {
+    import ImageSource = Fayde.Media.Imaging.ImageSource;
+    class Resource extends Fayde.Controls.Control {
+        static SourceProperty: DependencyProperty;
+        static LinksProperty: DependencyProperty;
+        static ImageSourceProperty: DependencyProperty;
+        Source: IResource;
+        Links: nullstone.IEnumerable<ILink>;
+        ImageSource: ImageSource;
+        protected $owner: IResourceOwner;
+        private $lproxy;
+        constructor();
+        protected OnSourceChanged(oldValue: IResource, newValue: IResource): void;
+        protected OnLinksChanged(oldValue: nullstone.IEnumerable<ILink>, newValue: nullstone.IEnumerable<ILink>): void;
+        protected OnLinksAdded(items: exjs.IEnumerableEx<ILink>): void;
+        protected OnLinksRemoved(items: exjs.IEnumerableEx<ILink>): void;
+        AddLinkToRoot(link: Link): void;
+        RemoveLinkFromRoot(link: Link): void;
+        AttachTo(owner: IResourceOwner): void;
+        Detach(): void;
+        XMoved: nullstone.Event<MovedEventArgs>;
+        YMoved: nullstone.Event<MovedEventArgs>;
+        OnXMoved(dx: number): void;
+        OnYMoved(dy: number): void;
     }
 }
 declare module blueprint.core.controls {
@@ -89,32 +115,6 @@ declare module blueprint.core.controls {
         constructor(delta: number);
     }
 }
-declare module blueprint.core.controls {
-    import ImageSource = Fayde.Media.Imaging.ImageSource;
-    class Resource extends Fayde.Controls.Control {
-        static SourceProperty: DependencyProperty;
-        static LinksProperty: DependencyProperty;
-        static ImageSourceProperty: DependencyProperty;
-        Source: IResource;
-        Links: nullstone.IEnumerable<ILink>;
-        ImageSource: ImageSource;
-        protected $owner: IResourceOwner;
-        private $lproxy;
-        constructor();
-        protected OnSourceChanged(oldValue: IResource, newValue: IResource): void;
-        protected OnLinksChanged(oldValue: nullstone.IEnumerable<ILink>, newValue: nullstone.IEnumerable<ILink>): void;
-        protected OnLinksAdded(items: exjs.IEnumerableEx<ILink>): void;
-        protected OnLinksRemoved(items: exjs.IEnumerableEx<ILink>): void;
-        AddLinkToRoot(link: Link): void;
-        RemoveLinkFromRoot(link: Link): void;
-        AttachTo(owner: IResourceOwner): void;
-        Detach(): void;
-        XMoved: nullstone.Event<MovedEventArgs>;
-        YMoved: nullstone.Event<MovedEventArgs>;
-        OnXMoved(dx: number): void;
-        OnYMoved(dy: number): void;
-    }
-}
 declare module blueprint.core.metadata {
     interface IMetadataType {
         uid: any;
@@ -132,13 +132,13 @@ declare module blueprint.core.metadata {
     }
 }
 declare module blueprint.core.metadata {
-    var registry: Registry;
     class Registry {
         private types;
         add(type: IMetadataType): void;
         get(bundle?: string, group?: string): exjs.IEnumerableEx<IResourceMetadata>;
         getByUid(uid: any): IResourceMetadata;
     }
+    var registry: Registry;
 }
 declare module blueprint.core.ui {
     function move(uie: Fayde.UIElement, x: number, y: number): void;
