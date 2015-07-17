@@ -41,7 +41,7 @@ module blueprint.core.controls {
 
         protected OnLinksAdded (items: exjs.IEnumerableEx<ILink>) {
             var owner = this.$owner;
-            if (!owner)
+            if (!owner || !items)
                 return;
             items.select(item => owner.RegisterLink(item))
                 .where(link => !!link)
@@ -51,7 +51,7 @@ module blueprint.core.controls {
 
         protected OnLinksRemoved (items: exjs.IEnumerableEx<ILink>) {
             var owner = this.$owner;
-            if (!owner)
+            if (!owner || !items)
                 return;
             items.select(item => owner.UnregisterLink(item))
                 .where(link => !!link)

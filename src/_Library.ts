@@ -1,3 +1,3 @@
 module blueprint.core {
-    export var Library = Fayde.TypeManager.resolveLibrary("http://schemas.wsick.com/blueprint");
+    export var Library = Fayde.TypeManager.resolveLibrary("lib://blueprint-core");
 }

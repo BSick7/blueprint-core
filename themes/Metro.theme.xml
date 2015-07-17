@@ -5,8 +5,10 @@
     <Style TargetType="blueprint:Container">
         <Setter Property="Template">
             <Setter.Value>
-                <Canvas x:Name="Canvas">
-                </Canvas>
+                <ControlTemplate TargetType="blueprint:Container">
+                    <Canvas x:Name="Canvas">
+                    </Canvas>
+                </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>

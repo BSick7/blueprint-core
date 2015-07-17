@@ -9,7 +9,7 @@ var blueprint;
 (function (blueprint) {
     var core;
     (function (core) {
-        core.Library = Fayde.TypeManager.resolveLibrary("http://schemas.wsick.com/blueprint");
+        core.Library = Fayde.TypeManager.resolveLibrary("lib://blueprint-core");
     })(core = blueprint.core || (blueprint.core = {}));
 })(blueprint || (blueprint = {}));
 var __extends = this.__extends || function (d, b) {
@@ -56,7 +56,7 @@ var blueprint;
                 Resource.prototype.OnLinksAdded = function (items) {
                     var _this = this;
                     var owner = this.$owner;
-                    if (!owner)
+                    if (!owner || !items)
                         return;
                     items.select(function (item) { return owner.RegisterLink(item); })
                         .where(function (link) { return !!link; })
@@ -66,7 +66,7 @@ var blueprint;
                 Resource.prototype.OnLinksRemoved = function (items) {
                     var _this = this;
                     var owner = this.$owner;
-                    if (!owner)
+                    if (!owner || !items)
                         return;
                     items.select(function (item) { return owner.UnregisterLink(item); })
                         .where(function (link) { return !!link; })
@@ -180,7 +180,7 @@ var blueprint;
                 Container.prototype.CreateChild = function (res) {
                     var meta = core.metadata.registry.getByUid(res.metadataUid);
                     var ctrl;
-                    if (meta.isContainer)
+                    if (meta && meta.isContainer)
                         ctrl = new Container();
                     else
                         ctrl = new controls.Resource();
@@ -395,6 +395,7 @@ var blueprint;
         (function (metadata) {
             var Registry = (function () {
                 function Registry() {
+                    this.types = new exjs.Map();
                 }
                 Registry.prototype.add = function (type) {
                     this.types.set(type.uid, type);

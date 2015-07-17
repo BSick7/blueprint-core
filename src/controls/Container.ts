@@ -74,7 +74,7 @@ module blueprint.core.controls {
         protected CreateChild (res: IResource): Resource {
             var meta = metadata.registry.getByUid(res.metadataUid);
             var ctrl: Resource;
-            if (meta.isContainer)
+            if (meta && meta.isContainer)
                 ctrl = new Container();
             else
                 ctrl = new Resource();

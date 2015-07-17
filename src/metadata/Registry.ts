@@ -1,6 +1,6 @@
 module blueprint.core.metadata {
     export class Registry {
-        private types: exjs.Map<any, IMetadataType>;
+        private types = new exjs.Map<any, IMetadataType>();
 
         add (type: IMetadataType) {
             this.types.set(type.uid, type);
