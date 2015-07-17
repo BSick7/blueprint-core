@@ -133,6 +133,7 @@ declare module blueprint.core.metadata {
 }
 declare module blueprint.core.metadata {
     class Registry {
+        static DEFAULT: IResourceMetadata;
         private types;
         add(type: IMetadataType): void;
         get(bundle?: string, group?: string): exjs.IEnumerableEx<IResourceMetadata>;

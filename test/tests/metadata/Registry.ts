@@ -1,11 +1,12 @@
 import registry = blueprint.core.metadata.registry;
 
 export function load () {
-    QUnit.module('metadata/registry');
+    QUnit.module('metadata/Registry');
 
     QUnit.test("default", (assert) => {
         var dmeta = registry.get();
         assert.ok(!!dmeta);
+        assert.ok(!dmeta.any());
     });
 
     QUnit.test("get", (assert) => {

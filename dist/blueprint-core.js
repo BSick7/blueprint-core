@@ -39,16 +39,18 @@ var blueprint;
                         Source: this,
                         Path: "Source.links"
                     }));
-                    this.SetBinding(Resource.ImageSourceProperty, Binding.fromData({
-                        Source: this,
-                        Path: "Source.thumbnail"
-                    }));
                 }
                 Resource.prototype.OnSourceChanged = function (oldValue, newValue) {
-                    if (oldValue)
+                    if (oldValue) {
                         core.ui.untrack(this);
-                    if (newValue)
+                        this.ImageSource = null;
+                    }
+                    if (newValue) {
                         core.ui.track(newValue, this);
+                        var meta = core.metadata.registry.getByUid(newValue.metadataUid)
+                            || core.metadata.Registry.DEFAULT;
+                        this.SetValue(Resource.ImageSourceProperty, nullstone.convertAnyToType(meta.thumbnail, ImageSource));
+                    }
                 };
                 Resource.prototype.OnLinksChanged = function (oldValue, newValue) {
                     this.$lproxy.swap(oldValue, newValue);
@@ -415,17 +417,17 @@ var blueprint;
                 Registry.prototype.clear = function () {
                     this.types.clear();
                 };
+                Registry.DEFAULT = {
+                    uid: {},
+                    bundle: "blueprint",
+                    group: "core",
+                    name: "Default",
+                    thumbnail: blueprint.core.Library.uri.toString() + "/images/gear.png"
+                };
                 return Registry;
             })();
             metadata.Registry = Registry;
             metadata.registry = new Registry();
-            var DEFAULT_TYPE = {
-                uid: {},
-                bundle: "blueprint",
-                group: "core",
-                name: "DEFAULT"
-            };
-            metadata.registry.add(DEFAULT_TYPE);
         })(metadata = core.metadata || (core.metadata = {}));
     })(core = blueprint.core || (blueprint.core = {}));
 })(blueprint || (blueprint = {}));

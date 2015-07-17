@@ -22,17 +22,19 @@ module blueprint.core.controls {
                 Source: this,
                 Path: "Source.links"
             }));
-            this.SetBinding(Resource.ImageSourceProperty, Binding.fromData({
-                Source: this,
-                Path: "Source.thumbnail"
-            }));
         }
 
         protected OnSourceChanged (oldValue: IResource, newValue: IResource) {
-            if (oldValue)
+            if (oldValue) {
                 ui.untrack(this);
-            if (newValue)
+                this.ImageSource = null;
+            }
+            if (newValue) {
                 ui.track(newValue, this);
+                var meta = metadata.registry.getByUid(newValue.metadataUid)
+                    || metadata.Registry.DEFAULT;
+                this.SetValue(Resource.ImageSourceProperty, nullstone.convertAnyToType(meta.thumbnail, ImageSource));
+            }
         }
 
         protected OnLinksChanged (oldValue: nullstone.IEnumerable<ILink>, newValue: nullstone.IEnumerable<ILink>) {

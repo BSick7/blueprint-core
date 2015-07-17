@@ -1,5 +1,13 @@
 module blueprint.core.metadata {
     export class Registry {
+        static DEFAULT: IResourceMetadata = {
+            uid: {},
+            bundle: "blueprint",
+            group: "core",
+            name: "Default",
+            thumbnail: blueprint.core.Library.uri.toString() + "/images/gear.png"
+        };
+
         private types = new exjs.Map<any, IMetadataType>();
 
         add (type: IMetadataType) {
@@ -26,11 +34,4 @@ module blueprint.core.metadata {
         }
     }
     export var registry = new Registry();
-    var DEFAULT_TYPE: IMetadataType = {
-        uid: {},
-        bundle: "blueprint",
-        group: "core",
-        name: "DEFAULT"
-    };
-    registry.add(DEFAULT_TYPE);
 }
