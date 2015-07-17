@@ -63,7 +63,7 @@ module.exports = function (grunt) {
                 files: [
                     {
                         expand: true,
-                        src: ['themes/', 'dist/', 'src/'],
+                        src: ['themes/', 'dist/', 'src/', 'images/'],
                         dest: '<%= dirs.test.lib %>/<%= meta.name %>'
                     },
                     {
@@ -79,7 +79,7 @@ module.exports = function (grunt) {
                 files: [
                     {
                         expand: true,
-                        src: ['themes/', 'dist/', 'src/'],
+                        src: ['themes/', 'dist/', 'src/', 'images/'],
                         dest: '<%= dirs.testsite.lib %>/<%= meta.name %>'
                     },
                     {
