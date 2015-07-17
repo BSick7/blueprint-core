@@ -1,8 +1,9 @@
 module runner {
     var libpath = "lib/blueprint-core/dist/blueprint-core";
     var testModules = [
+        ".build/tests/metadata/Registry",
         ".build/tests/controls/Resource",
-        ".build/tests/metadata/Registry"
+        ".build/tests/controls/Container"
     ];
 
     Fayde.LoadConfigJson((config, err) => {

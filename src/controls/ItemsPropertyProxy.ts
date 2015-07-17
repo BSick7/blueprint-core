@@ -12,10 +12,10 @@ module blueprint.core.controls {
                 var onc = INotifyCollectionChanged_.as(oldValue);
                 if (onc)
                     onc.CollectionChanged.off(this.onChanged, this);
-                CollectionChangedEventArgs.Reset(exjs.en(oldValue).toArray());
+                this.onChanged(CollectionChangedEventArgs.Reset(exjs.en(oldValue).toArray()));
             }
             if (newValue) {
-                CollectionChangedEventArgs.AddRange(exjs.en(newValue).toArray(), 0);
+                this.onChanged(CollectionChangedEventArgs.AddRange(exjs.en(newValue).toArray(), 0));
                 var nnc = INotifyCollectionChanged_.as(newValue);
                 if (nnc)
                     nnc.CollectionChanged.on(this.onChanged, this);

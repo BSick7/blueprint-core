@@ -105,8 +105,9 @@ module blueprint.core.controls {
                 owner.AddLinkToRoot(link);
                 return;
             }
-            if (this.$canvas)
-                this.$canvas.Children.Add(link);
+            var canvas = this.$canvas;
+            if (canvas && !canvas.Children.Contains(link))
+                canvas.Children.Add(link);
         }
 
         RemoveLinkFromRoot (link: Link) {
