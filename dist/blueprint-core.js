@@ -409,10 +409,23 @@ var blueprint;
                 Registry.prototype.getByUid = function (uid) {
                     return this.types.get(uid);
                 };
+                Registry.prototype.remove = function (type) {
+                    this.types.delete(type.uid);
+                };
+                Registry.prototype.clear = function () {
+                    this.types.clear();
+                };
                 return Registry;
             })();
             metadata.Registry = Registry;
             metadata.registry = new Registry();
+            var DEFAULT_TYPE = {
+                uid: {},
+                bundle: "blueprint",
+                group: "core",
+                name: "DEFAULT"
+            };
+            metadata.registry.add(DEFAULT_TYPE);
         })(metadata = core.metadata || (core.metadata = {}));
     })(core = blueprint.core || (blueprint.core = {}));
 })(blueprint || (blueprint = {}));

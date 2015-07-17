@@ -16,6 +16,21 @@ module blueprint.core.metadata {
         getByUid (uid: any): IResourceMetadata {
             return this.types.get(uid);
         }
+
+        remove (type: IMetadataType) {
+            this.types.delete(type.uid);
+        }
+
+        clear () {
+            this.types.clear();
+        }
     }
     export var registry = new Registry();
+    var DEFAULT_TYPE: IMetadataType = {
+        uid: {},
+        bundle: "blueprint",
+        group: "core",
+        name: "DEFAULT"
+    };
+    registry.add(DEFAULT_TYPE);
 }

@@ -137,6 +137,8 @@ declare module blueprint.core.metadata {
         add(type: IMetadataType): void;
         get(bundle?: string, group?: string): exjs.IEnumerableEx<IResourceMetadata>;
         getByUid(uid: any): IResourceMetadata;
+        remove(type: IMetadataType): void;
+        clear(): void;
     }
     var registry: Registry;
 }
