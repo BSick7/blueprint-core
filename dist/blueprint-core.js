@@ -423,7 +423,7 @@ var blueprint;
                     bundle: "blueprint",
                     group: "core",
                     name: "Default",
-                    thumbnail: blueprint.core.Library.uri.toString() + "/images/gear.png"
+                    thumbnail: blueprint.core.Library.uri.toString() + "$images/gear.png"
                 };
                 return Registry;
             })();

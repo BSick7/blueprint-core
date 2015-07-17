@@ -2,12 +2,14 @@
   "libs": {
     "blueprint-core": {
       "exports": "blueprint.core",
+      "base": "lib/blueprint-core",
       "deps": [
         "exjs"
       ]
     },
     "exjs": {
       "exports": "exjs",
+      "base": "lib/exjs",
       "path": "lib/exjs/dist/ex.min"
     }
   },
