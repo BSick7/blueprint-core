@@ -2,83 +2,184 @@ module blueprint.core.controls {
     import Canvas = Fayde.Controls.Canvas;
     import Binding = Fayde.Data.Binding;
 
-    export class Container extends Fayde.Controls.Control {
-        static SourceProperty = DependencyProperty.Register("Source", () => Object, Container, undefined, (cont: Container, args) => cont.OnSourceChanged(args.OldValue, args.NewValue));
-        static LinksProperty = DependencyProperty.Register("Links", () => nullstone.IEnumerable_, Container, undefined, (cont: Container, args) => cont.OnSourceChanged(args.OldValue, args.NewValue));
+    export class Container extends Resource implements IResourceOwner {
         static ChildrenProperty = DependencyProperty.Register("Children", () => nullstone.IEnumerable_, Container, undefined, (cont: Container, args) => cont.OnChildrenChanged(args.OldValue, args.NewValue));
-        Source: IResource;
-        Links: nullstone.IEnumerable<IResource>;
         Children: nullstone.IEnumerable<IResource>;
+        Source: IContainer;
 
-        protected OnSourceChanged (oldValue: IContainer, newValue: IContainer) {
-        }
+        private $canvas: Canvas;
+        private $cproxy: ItemsPropertyProxy;
+        private $registered = new exjs.Map<IResource, Resource>();
+        private $links = new exjs.Map<ILink, Link>();
 
-        protected OnLinksChanged (oldValue: nullstone.IEnumerable<ILink>, newValue: nullstone.IEnumerable<ILink>) {
-            this.$linksProxy.swap(oldValue, newValue);
-        }
-
-        protected OnChildrenChanged (oldValue: nullstone.IEnumerable<IResource>, newValue: nullstone.IEnumerable<IResource>) {
-            this.$childrenProxy.swap(oldValue, newValue);
-        }
-
-        private _canvas: Canvas;
-        private $linksProxy: ItemsPropertyProxy;
-        private $childrenProxy: ItemsPropertyProxy;
-
-        constructor (source?: IResource) {
+        constructor () {
             super();
             this.DefaultStyleKey = Container;
-            this.$linksProxy = new ItemsPropertyProxy((items, index) => this.OnLinksAdded(items, index), (items, index) => this.OnLinksRemoved(items, index));
-            this.$childrenProxy = new ItemsPropertyProxy((items, index) => this.OnChildrenAdded(items, index), (items, index) => this.OnChildrenRemoved(items, index));
-            this.Source = source;
-            this.SetBinding(Container.LinksProperty, Binding.fromData({
-                Path: "Source.links",
-                Source: this
-            }));
+            this.$cproxy = new ItemsPropertyProxy((items: IResource[], index) => this.OnChildrenAdded(items.en()), (items: IResource[], index) => this.OnChildrenRemoved(items.en()));
             this.SetBinding(Container.ChildrenProperty, Binding.fromData({
-                Path: "Source.children",
-                Source: this
+                Source: this,
+                Path: "Source.children"
             }));
         }
 
         OnApplyTemplate () {
             super.OnApplyTemplate();
-            this._canvas = <Canvas>this.GetTemplateChild("canvas", Canvas);
+            this.$canvas = <Canvas>this.GetTemplateChild("Canvas", Canvas);
+            var source = this.Source;
+            if (source)
+                this.OnChildrenAdded(source.children);
         }
 
-        protected OnLinksAdded (items: ILink[], index: number) {
-            items.map(item => this.CreateLink(item))
-                .forEach(link => this._canvas.Children.Add(link));
+        protected OnChildrenChanged (oldValue: nullstone.IEnumerable<IResource>, newValue: nullstone.IEnumerable<IResource>) {
+            this.$cproxy.swap(oldValue, newValue);
         }
 
-        protected OnLinksRemoved (items: ILink[], index: number) {
-            var children = this._canvas.Children;
-            exjs.en(children)
-                .join(items.en(), uie => (<any>uie).Source, link => link, (uie, link) => uie)
-                .forEach(uie => children.Remove(uie));
+        protected OnChildrenAdded (items: exjs.IEnumerableEx<IResource>) {
+            if (!this.$canvas || !items)
+                return;
+            items.select(item => this.Register(item))
+                .where(uie => !!uie)
+                .forEach(uie => this.$canvas.Children.Add(uie));
         }
 
-        protected OnChildrenAdded (items: IResource[], index: number) {
-            items.map(item => this.CreateChild(item))
-                .forEach(res => this._canvas.Children.Add(res));
+        protected OnChildrenRemoved (items: exjs.IEnumerableEx<IResource>) {
+            if (!this.$canvas || !items)
+                return;
+            items.select(item => this.Unregister(item))
+                .where(uie => !!uie)
+                .forEach(uie => this.$canvas.Children.Remove(uie));
         }
 
-        protected OnChildrenRemoved (items: IResource[], index: number) {
-            var children = this._canvas.Children;
-            exjs.en(children)
-                .join(items.en(), uie => (<any>uie).Source, link => link, (uie, link) => uie)
-                .forEach(uie => children.Remove(uie));
+        Register (item: IResource): Resource {
+            var uie = this.$registered.get(item.id);
+            if (uie)
+                return uie;
+            uie = this.CreateChild(item);
+            uie.AttachTo(this);
+            this.$registered.set(item.id, uie);
+            return uie;
         }
 
-        CreateChild (res: IResource): Container|Resource {
-            if (!(<IContainer>res).children)
-                return new Resource(res);
-            return new Container(res);
+        Unregister (item: IResource): Resource {
+            var uie = this.$registered.get(item.id);
+            if (!uie)
+                return null;
+            uie.Detach();
+            this.$registered.delete(item.id);
+            return uie;
         }
 
-        CreateLink (link: ILink): Link {
-            return new Link(link);
+        protected CreateChild (res: IResource): Resource {
+            var meta = metadata.registry.getByUid(res.metadataUid);
+            var ctrl: Resource;
+            if (meta.isContainer)
+                ctrl = new Container();
+            else
+                ctrl = new Resource();
+            ctrl.Source = res;
+            return ctrl;
+        }
+
+        RegisterLink (item: ILink): Link {
+            var link = this.$links.get(item);
+            if (link)
+                return link;
+            link = this.CreateLink(item);
+            this.$links.set(item, link);
+            return link;
+        }
+
+        UnregisterLink (item: ILink) {
+            var link = this.$links.get(item);
+            if (!link)
+                return null;
+            this.$links.delete(item);
+            return link;
+        }
+
+        AddLinkToRoot (link: Link) {
+            var owner = this.$owner;
+            if (owner) {
+                owner.AddLinkToRoot(link);
+                return;
+            }
+            if (this.$canvas)
+                this.$canvas.Children.Add(link);
+        }
+
+        RemoveLinkFromRoot (link: Link) {
+            var owner = this.$owner;
+            if (owner) {
+                owner.RemoveLinkFromRoot(link);
+                return;
+            }
+            if (this.$canvas)
+                this.$canvas.Children.Remove(link);
+        }
+
+        protected CreateLink (item: ILink): Link {
+            var link = new Link();
+            link.Source = item;
+            return link;
+        }
+
+        AttachTo (owner: IResourceOwner) {
+            super.AttachTo(owner);
+            this.HoistLinks();
+        }
+
+        Detach () {
+            this.UnhoistLinks();
+            super.Detach();
+        }
+
+        HoistLinks () {
+            var owner = this.$owner;
+            if (!owner)
+                return;
+            this.$links.values()
+                .forEach(link => this.AddLinkToRoot(link));
+        }
+
+        UnhoistLinks () {
+            this.$links.values()
+                .forEach(link => this.RemoveLinkFromRoot(link));
+        }
+
+        FindResourceControl (item: IResource, last?: Container): Resource {
+            //try me
+            var reg = this.$registered;
+            var res = reg.get(item.id);
+            if (res)
+                return res;
+            //try children
+            res = exjs.en(this.$canvas.Children)
+                .where(child => child instanceof Container)
+                .where((child: Container) => child !== last)
+                .select((container: Container) => container.FindResourceControl(item, this))
+                .skipWhile(ctrl => !ctrl)
+                .first();
+            if (res)
+                return res;
+            //try up the tree (and potentially back down)
+            if (!this.$owner || last === this.$owner)
+                return null;
+            return this.$owner.FindResourceControl(item, this);
+        }
+
+        OnXMoved (dx: number) {
+            super.OnXMoved(dx);
+            this.$registered.values()
+                .forEach(res => res.OnXMoved(dx));
+        }
+
+        OnYMoved (dy: number) {
+            super.OnYMoved(dy);
+            this.$registered.values()
+                .forEach(res => res.OnYMoved(dy));
         }
     }
+    Fayde.Controls.TemplateParts(Container,
+        {Name: "Canvas", Type: Canvas});
     Library.add(Container);
 }

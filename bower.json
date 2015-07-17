@@ -9,7 +9,7 @@
     "Gruntfile.js"
   ],
   "dependencies": {
-    "fayde": "~0.16.46",
+    "fayde": "~0.16.47",
     "exjs": "~0.2.11"
   },
   "devDependencies": {

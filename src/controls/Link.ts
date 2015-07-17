@@ -2,25 +2,30 @@ module blueprint.core.controls {
     import Binding = Fayde.Data.Binding;
 
     export class Link extends Fayde.Shapes.Path {
-        static SourceProperty = DependencyProperty.Register("Source", () => Object, Link, undefined, (link: Link, args) => link.OnSourceChanged(args.OldValue, args.NewValue));
-        static PeersProperty = DependencyProperty.Register("Peers", () => nullstone.IEnumerable_, Link, undefined, (link: Link, args) => link.OnPeersChanged(args.OldValue, args.NewValue));
+        static SourceProperty = DependencyProperty.Register("Source", () => Object, Link);
         Source: ILink;
-        Peers: nullstone.IEnumerable<IResource>;
 
-        constructor (link?: ILink) {
+        constructor () {
             super();
             this.DefaultStyleKey = Link;
-            this.Source = link;
         }
 
-        protected OnSourceChanged (oldValue: ILink, newValue: ILink) {
-            this.SetBinding(Link.PeersProperty, Binding.fromData({
-                Path: "peers",
-                Source: newValue
-            }))
+        RegisterPeer (peer: Resource) {
+            peer.XMoved.on(this.OnChainXMoved, this);
+            peer.YMoved.on(this.OnChainYMoved, this);
         }
 
-        protected OnPeersChanged (oldValue: nullstone.IEnumerable<IResource>, newValue: nullstone.IEnumerable<IResource>) {
+        UnregisterPeer (peer: Resource) {
+            peer.XMoved.off(this.OnChainXMoved, this);
+            peer.YMoved.off(this.OnChainYMoved, this);
+        }
+
+        protected OnChainXMoved (sender, args: MovedEventArgs) {
+
+        }
+
+        protected OnChainYMoved (sender, args: MovedEventArgs) {
+
         }
     }
     Library.add(Link);

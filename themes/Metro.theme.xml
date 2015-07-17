@@ -5,7 +5,7 @@
     <Style TargetType="blueprint:Container">
         <Setter Property="Template">
             <Setter.Value>
-                <Canvas x:Name="canvas">
+                <Canvas x:Name="Canvas">
                 </Canvas>
             </Setter.Value>
         </Setter>
@@ -20,5 +20,7 @@
         </Setter>
     </Style>
     <Style TargetType="blueprint:Link">
+        <Setter Property="Stroke" Value="Black" />
+        <Setter Property="StrokeThickness" Value="2" />
     </Style>
 </ResourceDictionary>

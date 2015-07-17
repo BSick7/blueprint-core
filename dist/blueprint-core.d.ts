@@ -11,6 +11,7 @@ declare module blueprint.core {
 }
 declare module blueprint.core {
     interface ILink {
+        id: any;
         peers: exjs.IEnumerable<IResource>;
     }
 }
@@ -23,27 +24,43 @@ declare module blueprint.core {
     }
 }
 declare module blueprint.core.controls {
-    class Container extends Fayde.Controls.Control {
-        static SourceProperty: DependencyProperty;
-        static LinksProperty: DependencyProperty;
+    class Container extends Resource implements IResourceOwner {
         static ChildrenProperty: DependencyProperty;
-        Source: IResource;
-        Links: nullstone.IEnumerable<IResource>;
         Children: nullstone.IEnumerable<IResource>;
-        protected OnSourceChanged(oldValue: IContainer, newValue: IContainer): void;
-        protected OnLinksChanged(oldValue: nullstone.IEnumerable<ILink>, newValue: nullstone.IEnumerable<ILink>): void;
-        protected OnChildrenChanged(oldValue: nullstone.IEnumerable<IResource>, newValue: nullstone.IEnumerable<IResource>): void;
-        private _canvas;
-        private $linksProxy;
-        private $childrenProxy;
-        constructor(source?: IResource);
+        Source: IContainer;
+        private $canvas;
+        private $cproxy;
+        private $registered;
+        private $links;
+        constructor();
         OnApplyTemplate(): void;
-        protected OnLinksAdded(items: ILink[], index: number): void;
-        protected OnLinksRemoved(items: ILink[], index: number): void;
-        protected OnChildrenAdded(items: IResource[], index: number): void;
-        protected OnChildrenRemoved(items: IResource[], index: number): void;
-        CreateChild(res: IResource): Container | Resource;
-        CreateLink(link: ILink): Link;
+        protected OnChildrenChanged(oldValue: nullstone.IEnumerable<IResource>, newValue: nullstone.IEnumerable<IResource>): void;
+        protected OnChildrenAdded(items: exjs.IEnumerableEx<IResource>): void;
+        protected OnChildrenRemoved(items: exjs.IEnumerableEx<IResource>): void;
+        Register(item: IResource): Resource;
+        Unregister(item: IResource): Resource;
+        protected CreateChild(res: IResource): Resource;
+        RegisterLink(item: ILink): Link;
+        UnregisterLink(item: ILink): Link;
+        AddLinkToRoot(link: Link): void;
+        RemoveLinkFromRoot(link: Link): void;
+        protected CreateLink(item: ILink): Link;
+        AttachTo(owner: IResourceOwner): void;
+        Detach(): void;
+        HoistLinks(): void;
+        UnhoistLinks(): void;
+        FindResourceControl(item: IResource, last?: Container): Resource;
+        OnXMoved(dx: number): void;
+        OnYMoved(dy: number): void;
+    }
+}
+declare module blueprint.core.controls {
+    interface IResourceOwner {
+        RegisterLink(item: ILink): Link;
+        UnregisterLink(item: ILink): Link;
+        AddLinkToRoot(link: Link): any;
+        RemoveLinkFromRoot(link: Link): any;
+        FindResourceControl(item: IResource, last?: Container): Resource;
     }
 }
 declare module blueprint.core.controls {
@@ -58,23 +75,44 @@ declare module blueprint.core.controls {
 declare module blueprint.core.controls {
     class Link extends Fayde.Shapes.Path {
         static SourceProperty: DependencyProperty;
-        static PeersProperty: DependencyProperty;
         Source: ILink;
-        Peers: nullstone.IEnumerable<IResource>;
-        constructor(link?: ILink);
-        protected OnSourceChanged(oldValue: ILink, newValue: ILink): void;
-        protected OnPeersChanged(oldValue: nullstone.IEnumerable<IResource>, newValue: nullstone.IEnumerable<IResource>): void;
+        constructor();
+        RegisterPeer(peer: Resource): void;
+        UnregisterPeer(peer: Resource): void;
+        protected OnChainXMoved(sender: any, args: MovedEventArgs): void;
+        protected OnChainYMoved(sender: any, args: MovedEventArgs): void;
+    }
+}
+declare module blueprint.core.controls {
+    class MovedEventArgs implements nullstone.IEventArgs {
+        Delta: number;
+        constructor(delta: number);
     }
 }
 declare module blueprint.core.controls {
     import ImageSource = Fayde.Media.Imaging.ImageSource;
     class Resource extends Fayde.Controls.Control {
         static SourceProperty: DependencyProperty;
+        static LinksProperty: DependencyProperty;
         static ImageSourceProperty: DependencyProperty;
         Source: IResource;
+        Links: nullstone.IEnumerable<ILink>;
         ImageSource: ImageSource;
-        constructor(source?: IResource);
+        protected $owner: IResourceOwner;
+        private $lproxy;
+        constructor();
         protected OnSourceChanged(oldValue: IResource, newValue: IResource): void;
+        protected OnLinksChanged(oldValue: nullstone.IEnumerable<ILink>, newValue: nullstone.IEnumerable<ILink>): void;
+        protected OnLinksAdded(items: exjs.IEnumerableEx<ILink>): void;
+        protected OnLinksRemoved(items: exjs.IEnumerableEx<ILink>): void;
+        AddLinkToRoot(link: Link): void;
+        RemoveLinkFromRoot(link: Link): void;
+        AttachTo(owner: IResourceOwner): void;
+        Detach(): void;
+        XMoved: nullstone.Event<MovedEventArgs>;
+        YMoved: nullstone.Event<MovedEventArgs>;
+        OnXMoved(dx: number): void;
+        OnYMoved(dy: number): void;
     }
 }
 declare module blueprint.core.metadata {
@@ -101,4 +139,11 @@ declare module blueprint.core.metadata {
         get(bundle?: string, group?: string): exjs.IEnumerableEx<IResourceMetadata>;
         getByUid(uid: any): IResourceMetadata;
     }
+}
+declare module blueprint.core.ui {
+    function move(uie: Fayde.UIElement, x: number, y: number): void;
+}
+declare module blueprint.core.ui {
+    function track(item: IResource, uie: Fayde.UIElement): void;
+    function untrack(uie: Fayde.UIElement): void;
 }

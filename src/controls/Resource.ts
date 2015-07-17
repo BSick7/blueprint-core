@@ -5,26 +5,95 @@ module blueprint.core.controls {
 
     export class Resource extends Fayde.Controls.Control {
         static SourceProperty = DependencyProperty.Register("Source", () => Object, Resource, undefined, (res: Resource, args) => res.OnSourceChanged(args.OldValue, args.NewValue));
+        static LinksProperty = DependencyProperty.Register("Links", () => nullstone.IEnumerable_, Resource, undefined, (res: Resource, args) => res.OnLinksChanged(args.OldValue, args.NewValue));
         static ImageSourceProperty = DependencyProperty.Register("ImageSource", () => ImageSource, Resource);
         Source: IResource;
+        Links: nullstone.IEnumerable<ILink>;
         ImageSource: ImageSource;
 
-        constructor (source?: IResource) {
+        protected $owner: IResourceOwner;
+        private $lproxy: ItemsPropertyProxy;
+
+        constructor () {
             super();
             this.DefaultStyleKey = Resource;
-            this.Source = source;
+            this.$lproxy = new ItemsPropertyProxy((items: ILink[], index) => this.OnLinksAdded(items.en()), (items: ILink[], index) => this.OnLinksRemoved(items.en()));
+            this.SetBinding(Resource.LinksProperty, Binding.fromData({
+                Source: this,
+                Path: "Source.links"
+            }));
+            this.SetBinding(Resource.ImageSourceProperty, Binding.fromData({
+                Source: this,
+                Path: "Source.thumbnail"
+            }));
         }
 
         protected OnSourceChanged (oldValue: IResource, newValue: IResource) {
-            var meta: metadata.IMetadataType;
-            if (newValue && newValue.metadataUid && !!(meta = metadata.registry.getByUid(newValue.metadataUid))) {
-                this.SetBinding(Resource.ImageSourceProperty, Binding.fromData({
-                    Path: "thumbnail",
-                    Source: meta
-                }));
+            if (oldValue)
+                ui.untrack(this);
+            if (newValue)
+                ui.track(newValue, this);
+        }
+
+        protected OnLinksChanged (oldValue: nullstone.IEnumerable<ILink>, newValue: nullstone.IEnumerable<ILink>) {
+            this.$lproxy.swap(oldValue, newValue);
+        }
+
+        protected OnLinksAdded (items: exjs.IEnumerableEx<ILink>) {
+            var owner = this.$owner;
+            if (!owner)
                 return;
-            }
-            this.ClearValue(Resource.ImageSourceProperty);
+            items.select(item => owner.RegisterLink(item))
+                .where(link => !!link)
+                .apply((link: Link) => link.RegisterPeer(this))
+                .forEach(link => this.AddLinkToRoot(link));
+        }
+
+        protected OnLinksRemoved (items: exjs.IEnumerableEx<ILink>) {
+            var owner = this.$owner;
+            if (!owner)
+                return;
+            items.select(item => owner.UnregisterLink(item))
+                .where(link => !!link)
+                .apply((link: Link) => link.UnregisterPeer(this))
+                .forEach(link => this.RemoveLinkFromRoot(link));
+        }
+
+        AddLinkToRoot (link: Link) {
+            if (!this.$owner)
+                return;
+            this.$owner.AddLinkToRoot(link);
+        }
+
+        RemoveLinkFromRoot (link: Link) {
+            if (!this.$owner)
+                return;
+            this.$owner.RemoveLinkFromRoot(link);
+        }
+
+        AttachTo (owner: IResourceOwner) {
+            this.$owner = owner;
+            var source = this.Source;
+            if (source)
+                this.OnLinksAdded(source.links);
+        }
+
+        Detach () {
+            var source = this.Source;
+            if (source)
+                this.OnLinksRemoved(source.links);
+            this.$owner = null;
+        }
+
+        XMoved = new nullstone.Event<MovedEventArgs>();
+        YMoved = new nullstone.Event<MovedEventArgs>();
+
+        OnXMoved (dx: number) {
+            this.XMoved.raise(this, new MovedEventArgs(dx));
+        }
+
+        OnYMoved (dy: number) {
+            this.YMoved.raise(this, new MovedEventArgs(dy));
         }
     }
     Library.add(Resource);

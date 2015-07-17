@@ -28,70 +28,166 @@ var blueprint;
             var Binding = Fayde.Data.Binding;
             var Container = (function (_super) {
                 __extends(Container, _super);
-                function Container(source) {
+                function Container() {
                     var _this = this;
                     _super.call(this);
+                    this.$registered = new exjs.Map();
+                    this.$links = new exjs.Map();
                     this.DefaultStyleKey = Container;
-                    this.$linksProxy = new controls.ItemsPropertyProxy(function (items, index) { return _this.OnLinksAdded(items, index); }, function (items, index) { return _this.OnLinksRemoved(items, index); });
-                    this.$childrenProxy = new controls.ItemsPropertyProxy(function (items, index) { return _this.OnChildrenAdded(items, index); }, function (items, index) { return _this.OnChildrenRemoved(items, index); });
-                    this.Source = source;
-                    this.SetBinding(Container.LinksProperty, Binding.fromData({
-                        Path: "Source.links",
-                        Source: this
-                    }));
+                    this.$cproxy = new controls.ItemsPropertyProxy(function (items, index) { return _this.OnChildrenAdded(items.en()); }, function (items, index) { return _this.OnChildrenRemoved(items.en()); });
                     this.SetBinding(Container.ChildrenProperty, Binding.fromData({
-                        Path: "Source.children",
-                        Source: this
+                        Source: this,
+                        Path: "Source.children"
                     }));
                 }
-                Container.prototype.OnSourceChanged = function (oldValue, newValue) {
-                };
-                Container.prototype.OnLinksChanged = function (oldValue, newValue) {
-                    this.$linksProxy.swap(oldValue, newValue);
-                };
-                Container.prototype.OnChildrenChanged = function (oldValue, newValue) {
-                    this.$childrenProxy.swap(oldValue, newValue);
-                };
                 Container.prototype.OnApplyTemplate = function () {
                     _super.prototype.OnApplyTemplate.call(this);
-                    this._canvas = this.GetTemplateChild("canvas", Canvas);
+                    this.$canvas = this.GetTemplateChild("Canvas", Canvas);
+                    var source = this.Source;
+                    if (source)
+                        this.OnChildrenAdded(source.children);
                 };
-                Container.prototype.OnLinksAdded = function (items, index) {
+                Container.prototype.OnChildrenChanged = function (oldValue, newValue) {
+                    this.$cproxy.swap(oldValue, newValue);
+                };
+                Container.prototype.OnChildrenAdded = function (items) {
                     var _this = this;
-                    items.map(function (item) { return _this.CreateLink(item); })
-                        .forEach(function (link) { return _this._canvas.Children.Add(link); });
+                    if (!this.$canvas || !items)
+                        return;
+                    items.select(function (item) { return _this.Register(item); })
+                        .where(function (uie) { return !!uie; })
+                        .forEach(function (uie) { return _this.$canvas.Children.Add(uie); });
                 };
-                Container.prototype.OnLinksRemoved = function (items, index) {
-                    var children = this._canvas.Children;
-                    exjs.en(children)
-                        .join(items.en(), function (uie) { return uie.Source; }, function (link) { return link; }, function (uie, link) { return uie; })
-                        .forEach(function (uie) { return children.Remove(uie); });
-                };
-                Container.prototype.OnChildrenAdded = function (items, index) {
+                Container.prototype.OnChildrenRemoved = function (items) {
                     var _this = this;
-                    items.map(function (item) { return _this.CreateChild(item); })
-                        .forEach(function (res) { return _this._canvas.Children.Add(res); });
+                    if (!this.$canvas || !items)
+                        return;
+                    items.select(function (item) { return _this.Unregister(item); })
+                        .where(function (uie) { return !!uie; })
+                        .forEach(function (uie) { return _this.$canvas.Children.Remove(uie); });
                 };
-                Container.prototype.OnChildrenRemoved = function (items, index) {
-                    var children = this._canvas.Children;
-                    exjs.en(children)
-                        .join(items.en(), function (uie) { return uie.Source; }, function (link) { return link; }, function (uie, link) { return uie; })
-                        .forEach(function (uie) { return children.Remove(uie); });
+                Container.prototype.Register = function (item) {
+                    var uie = this.$registered.get(item.id);
+                    if (uie)
+                        return uie;
+                    uie = this.CreateChild(item);
+                    uie.AttachTo(this);
+                    this.$registered.set(item.id, uie);
+                    return uie;
+                };
+                Container.prototype.Unregister = function (item) {
+                    var uie = this.$registered.get(item.id);
+                    if (!uie)
+                        return null;
+                    uie.Detach();
+                    this.$registered.delete(item.id);
+                    return uie;
                 };
                 Container.prototype.CreateChild = function (res) {
-                    if (!res.children)
-                        return new controls.Resource(res);
-                    return new Container(res);
+                    var meta = core.metadata.registry.getByUid(res.metadataUid);
+                    var ctrl;
+                    if (meta.isContainer)
+                        ctrl = new Container();
+                    else
+                        ctrl = new controls.Resource();
+                    ctrl.Source = res;
+                    return ctrl;
                 };
-                Container.prototype.CreateLink = function (link) {
-                    return new controls.Link(link);
+                Container.prototype.RegisterLink = function (item) {
+                    var link = this.$links.get(item);
+                    if (link)
+                        return link;
+                    link = this.CreateLink(item);
+                    this.$links.set(item, link);
+                    return link;
                 };
-                Container.SourceProperty = DependencyProperty.Register("Source", function () { return Object; }, Container, undefined, function (cont, args) { return cont.OnSourceChanged(args.OldValue, args.NewValue); });
-                Container.LinksProperty = DependencyProperty.Register("Links", function () { return nullstone.IEnumerable_; }, Container, undefined, function (cont, args) { return cont.OnSourceChanged(args.OldValue, args.NewValue); });
+                Container.prototype.UnregisterLink = function (item) {
+                    var link = this.$links.get(item);
+                    if (!link)
+                        return null;
+                    this.$links.delete(item);
+                    return link;
+                };
+                Container.prototype.AddLinkToRoot = function (link) {
+                    var owner = this.$owner;
+                    if (owner) {
+                        owner.AddLinkToRoot(link);
+                        return;
+                    }
+                    if (this.$canvas)
+                        this.$canvas.Children.Add(link);
+                };
+                Container.prototype.RemoveLinkFromRoot = function (link) {
+                    var owner = this.$owner;
+                    if (owner) {
+                        owner.RemoveLinkFromRoot(link);
+                        return;
+                    }
+                    if (this.$canvas)
+                        this.$canvas.Children.Remove(link);
+                };
+                Container.prototype.CreateLink = function (item) {
+                    var link = new controls.Link();
+                    link.Source = item;
+                    return link;
+                };
+                Container.prototype.AttachTo = function (owner) {
+                    _super.prototype.AttachTo.call(this, owner);
+                    this.HoistLinks();
+                };
+                Container.prototype.Detach = function () {
+                    this.UnhoistLinks();
+                    _super.prototype.Detach.call(this);
+                };
+                Container.prototype.HoistLinks = function () {
+                    var _this = this;
+                    var owner = this.$owner;
+                    if (!owner)
+                        return;
+                    this.$links.values()
+                        .forEach(function (link) { return _this.AddLinkToRoot(link); });
+                };
+                Container.prototype.UnhoistLinks = function () {
+                    var _this = this;
+                    this.$links.values()
+                        .forEach(function (link) { return _this.RemoveLinkFromRoot(link); });
+                };
+                Container.prototype.FindResourceControl = function (item, last) {
+                    var _this = this;
+                    //try me
+                    var reg = this.$registered;
+                    var res = reg.get(item.id);
+                    if (res)
+                        return res;
+                    //try children
+                    res = exjs.en(this.$canvas.Children)
+                        .where(function (child) { return child instanceof Container; })
+                        .where(function (child) { return child !== last; })
+                        .select(function (container) { return container.FindResourceControl(item, _this); })
+                        .skipWhile(function (ctrl) { return !ctrl; })
+                        .first();
+                    if (res)
+                        return res;
+                    //try up the tree (and potentially back down)
+                    if (!this.$owner || last === this.$owner)
+                        return null;
+                    return this.$owner.FindResourceControl(item, this);
+                };
+                Container.prototype.OnXMoved = function (dx) {
+                    _super.prototype.OnXMoved.call(this, dx);
+                    this.$registered.values()
+                        .forEach(function (res) { return res.OnXMoved(dx); });
+                };
+                Container.prototype.OnYMoved = function (dy) {
+                    _super.prototype.OnYMoved.call(this, dy);
+                    this.$registered.values()
+                        .forEach(function (res) { return res.OnYMoved(dy); });
+                };
                 Container.ChildrenProperty = DependencyProperty.Register("Children", function () { return nullstone.IEnumerable_; }, Container, undefined, function (cont, args) { return cont.OnChildrenChanged(args.OldValue, args.NewValue); });
                 return Container;
-            })(Fayde.Controls.Control);
+            })(controls.Resource);
             controls.Container = Container;
+            Fayde.Controls.TemplateParts(Container, { Name: "Canvas", Type: Canvas });
             core.Library.add(Container);
         })(controls = core.controls || (core.controls = {}));
     })(core = blueprint.core || (blueprint.core = {}));
@@ -153,24 +249,25 @@ var blueprint;
     (function (core) {
         var controls;
         (function (controls) {
-            var Binding = Fayde.Data.Binding;
             var Link = (function (_super) {
                 __extends(Link, _super);
-                function Link(link) {
+                function Link() {
                     _super.call(this);
                     this.DefaultStyleKey = Link;
-                    this.Source = link;
                 }
-                Link.prototype.OnSourceChanged = function (oldValue, newValue) {
-                    this.SetBinding(Link.PeersProperty, Binding.fromData({
-                        Path: "peers",
-                        Source: newValue
-                    }));
+                Link.prototype.RegisterPeer = function (peer) {
+                    peer.XMoved.on(this.OnChainXMoved, this);
+                    peer.YMoved.on(this.OnChainYMoved, this);
                 };
-                Link.prototype.OnPeersChanged = function (oldValue, newValue) {
+                Link.prototype.UnregisterPeer = function (peer) {
+                    peer.XMoved.off(this.OnChainXMoved, this);
+                    peer.YMoved.off(this.OnChainYMoved, this);
                 };
-                Link.SourceProperty = DependencyProperty.Register("Source", function () { return Object; }, Link, undefined, function (link, args) { return link.OnSourceChanged(args.OldValue, args.NewValue); });
-                Link.PeersProperty = DependencyProperty.Register("Peers", function () { return nullstone.IEnumerable_; }, Link, undefined, function (link, args) { return link.OnPeersChanged(args.OldValue, args.NewValue); });
+                Link.prototype.OnChainXMoved = function (sender, args) {
+                };
+                Link.prototype.OnChainYMoved = function (sender, args) {
+                };
+                Link.SourceProperty = DependencyProperty.Register("Source", function () { return Object; }, Link);
                 return Link;
             })(Fayde.Shapes.Path);
             controls.Link = Link;
@@ -184,27 +281,103 @@ var blueprint;
     (function (core) {
         var controls;
         (function (controls) {
+            var MovedEventArgs = (function () {
+                function MovedEventArgs(delta) {
+                    Object.defineProperties(this, {
+                        "Delta": { writable: false, value: delta }
+                    });
+                }
+                return MovedEventArgs;
+            })();
+            controls.MovedEventArgs = MovedEventArgs;
+        })(controls = core.controls || (core.controls = {}));
+    })(core = blueprint.core || (blueprint.core = {}));
+})(blueprint || (blueprint = {}));
+var blueprint;
+(function (blueprint) {
+    var core;
+    (function (core) {
+        var controls;
+        (function (controls) {
             var ImageSource = Fayde.Media.Imaging.ImageSource;
             var Binding = Fayde.Data.Binding;
             var Resource = (function (_super) {
                 __extends(Resource, _super);
-                function Resource(source) {
+                function Resource() {
+                    var _this = this;
                     _super.call(this);
+                    this.XMoved = new nullstone.Event();
+                    this.YMoved = new nullstone.Event();
                     this.DefaultStyleKey = Resource;
-                    this.Source = source;
+                    this.$lproxy = new controls.ItemsPropertyProxy(function (items, index) { return _this.OnLinksAdded(items.en()); }, function (items, index) { return _this.OnLinksRemoved(items.en()); });
+                    this.SetBinding(Resource.LinksProperty, Binding.fromData({
+                        Source: this,
+                        Path: "Source.links"
+                    }));
+                    this.SetBinding(Resource.ImageSourceProperty, Binding.fromData({
+                        Source: this,
+                        Path: "Source.thumbnail"
+                    }));
                 }
                 Resource.prototype.OnSourceChanged = function (oldValue, newValue) {
-                    var meta;
-                    if (newValue && newValue.metadataUid && !!(meta = core.metadata.registry.getByUid(newValue.metadataUid))) {
-                        this.SetBinding(Resource.ImageSourceProperty, Binding.fromData({
-                            Path: "thumbnail",
-                            Source: meta
-                        }));
+                    if (oldValue)
+                        core.ui.untrack(this);
+                    if (newValue)
+                        core.ui.track(newValue, this);
+                };
+                Resource.prototype.OnLinksChanged = function (oldValue, newValue) {
+                    this.$lproxy.swap(oldValue, newValue);
+                };
+                Resource.prototype.OnLinksAdded = function (items) {
+                    var _this = this;
+                    var owner = this.$owner;
+                    if (!owner)
                         return;
-                    }
-                    this.ClearValue(Resource.ImageSourceProperty);
+                    items.select(function (item) { return owner.RegisterLink(item); })
+                        .where(function (link) { return !!link; })
+                        .apply(function (link) { return link.RegisterPeer(_this); })
+                        .forEach(function (link) { return _this.AddLinkToRoot(link); });
+                };
+                Resource.prototype.OnLinksRemoved = function (items) {
+                    var _this = this;
+                    var owner = this.$owner;
+                    if (!owner)
+                        return;
+                    items.select(function (item) { return owner.UnregisterLink(item); })
+                        .where(function (link) { return !!link; })
+                        .apply(function (link) { return link.UnregisterPeer(_this); })
+                        .forEach(function (link) { return _this.RemoveLinkFromRoot(link); });
+                };
+                Resource.prototype.AddLinkToRoot = function (link) {
+                    if (!this.$owner)
+                        return;
+                    this.$owner.AddLinkToRoot(link);
+                };
+                Resource.prototype.RemoveLinkFromRoot = function (link) {
+                    if (!this.$owner)
+                        return;
+                    this.$owner.RemoveLinkFromRoot(link);
+                };
+                Resource.prototype.AttachTo = function (owner) {
+                    this.$owner = owner;
+                    var source = this.Source;
+                    if (source)
+                        this.OnLinksAdded(source.links);
+                };
+                Resource.prototype.Detach = function () {
+                    var source = this.Source;
+                    if (source)
+                        this.OnLinksRemoved(source.links);
+                    this.$owner = null;
+                };
+                Resource.prototype.OnXMoved = function (dx) {
+                    this.XMoved.raise(this, new controls.MovedEventArgs(dx));
+                };
+                Resource.prototype.OnYMoved = function (dy) {
+                    this.YMoved.raise(this, new controls.MovedEventArgs(dy));
                 };
                 Resource.SourceProperty = DependencyProperty.Register("Source", function () { return Object; }, Resource, undefined, function (res, args) { return res.OnSourceChanged(args.OldValue, args.NewValue); });
+                Resource.LinksProperty = DependencyProperty.Register("Links", function () { return nullstone.IEnumerable_; }, Resource, undefined, function (res, args) { return res.OnLinksChanged(args.OldValue, args.NewValue); });
                 Resource.ImageSourceProperty = DependencyProperty.Register("ImageSource", function () { return ImageSource; }, Resource);
                 return Resource;
             })(Fayde.Controls.Control);
@@ -239,6 +412,72 @@ var blueprint;
             })();
             metadata.Registry = Registry;
         })(metadata = core.metadata || (core.metadata = {}));
+    })(core = blueprint.core || (blueprint.core = {}));
+})(blueprint || (blueprint = {}));
+var blueprint;
+(function (blueprint) {
+    var core;
+    (function (core) {
+        var ui;
+        (function (ui) {
+            var Canvas = Fayde.Controls.Canvas;
+            function move(uie, x, y) {
+                if (x != null)
+                    Canvas.SetLeft(uie, x);
+                if (y != null)
+                    Canvas.SetTop(uie, y);
+            }
+            ui.move = move;
+        })(ui = core.ui || (core.ui = {}));
+    })(core = blueprint.core || (blueprint.core = {}));
+})(blueprint || (blueprint = {}));
+var blueprint;
+(function (blueprint) {
+    var core;
+    (function (core) {
+        var ui;
+        (function (ui) {
+            var Canvas = Fayde.Controls.Canvas;
+            var XTrackerProperty = DependencyProperty.RegisterAttached("XTracker", function () { return Object; }, Fayde.UIElement);
+            var YTrackerProperty = DependencyProperty.RegisterAttached("YTracker", function () { return Object; }, Fayde.UIElement);
+            function track(item, uie) {
+                uie.SetValue(XTrackerProperty, uie.ListenToChanged(Canvas.LeftProperty, getXTracker(item, uie)));
+                uie.SetValue(YTrackerProperty, uie.ListenToChanged(Canvas.TopProperty, getYTracker(item, uie)));
+            }
+            ui.track = track;
+            function untrack(uie) {
+                var xtracker = uie.GetValue(XTrackerProperty);
+                if (xtracker)
+                    xtracker.Detach();
+                uie.ClearValue(XTrackerProperty);
+                var ytracker = uie.GetValue(YTrackerProperty);
+                if (ytracker)
+                    ytracker.Detach();
+                uie.ClearValue(YTrackerProperty);
+            }
+            ui.untrack = untrack;
+            function getXTracker(item, uie) {
+                if (uie instanceof core.controls.Resource) {
+                    var obj = getUiObject(item);
+                    return function (res, args) {
+                        obj.x = args.NewValue || 0;
+                        res.OnXMoved(args.NewValue - args.OldValue);
+                    };
+                }
+            }
+            function getYTracker(item, uie) {
+                if (uie instanceof core.controls.Resource) {
+                    var obj = getUiObject(item);
+                    return function (res, args) {
+                        obj.y = args.NewValue || 0;
+                        res.OnYMoved(args.NewValue - args.OldValue);
+                    };
+                }
+            }
+            function getUiObject(item) {
+                return item["blueprint.ui"] = item["blueprint.ui"] || {};
+            }
+        })(ui = core.ui || (core.ui = {}));
     })(core = blueprint.core || (blueprint.core = {}));
 })(blueprint || (blueprint = {}));
 //# sourceMappingURL=blueprint-core.js.map
