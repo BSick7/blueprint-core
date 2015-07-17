@@ -8,7 +8,7 @@ class MainViewModel extends Fayde.MVVM.ViewModelBase {
         super();
         this.RootContainer = {
             id: 1,
-            metadataUid: "1",
+            metadataUid: null,
             children: [
                 <IResource>{
                     id: 2,
